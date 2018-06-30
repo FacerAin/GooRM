@@ -1,3 +1,4 @@
 {
-    "python.pythonPath": "C:\\Users\\syw51\\Anaconda3\\python.exe"
+    "python.pythonPath": "C:\\Users\\syw51\\Anaconda3\\python.exe",
+    "remote.onstartup": true
 }

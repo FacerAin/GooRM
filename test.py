@@ -10,4 +10,4 @@ def morphemeParse(data):
     print(parsedData[1][1][0])
     print(parsedData)
 
-morphemeParse('너는 누구니? 나는 정의철이야. 너는 뭐하는 친구니?')
+morphemeParse('너는 누구니? 나는 올라프야. 너는 뭐하는 친구니?')

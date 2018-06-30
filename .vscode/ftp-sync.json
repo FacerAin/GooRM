@@ -1,6 +1,6 @@
 {
     "remotePath": "/home/pi/goorm",
-    "host": "192.168.1.3",
+    "host": "192.168.1.7",
     "username": "pi",
     "password": "raspberry",
     "port": 22,

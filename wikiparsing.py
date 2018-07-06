@@ -21,4 +21,9 @@ while True:
     for word in malist:
         if not word[1] in ["Josa","Eomi","Punctuation"]:
             writeFp.write(word[0]+ " ")
-writeFp
+writeFp.close()
+
+data = word2vec.Text8Corpus("wikiout.txt")
+model = word2vec.Word2Vec(data , size=100)
+model.save("wiki.model")
+print("done.")

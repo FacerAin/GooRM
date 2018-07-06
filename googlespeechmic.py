@@ -208,9 +208,7 @@ def main(sample_rate, audio_src):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(
-        description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--rate', default=16000, help='Sample rate.', type=int)
     parser.add_argument('--audio_src', help='File to simulate streaming of.')
     args = parser.parse_args()

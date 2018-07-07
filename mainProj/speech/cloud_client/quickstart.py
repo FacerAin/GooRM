@@ -36,7 +36,7 @@ def run_quickstart():
     file_name = os.path.join(
         os.path.dirname(__file__),
         'resources',
-        'audio.raw')
+        'audio2.raw')
 
     # Loads the audio into memory
     with io.open(file_name, 'rb') as audio_file:

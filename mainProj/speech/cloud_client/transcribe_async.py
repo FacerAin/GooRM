@@ -90,6 +90,7 @@ def transcribe_gcs(gcs_uri):
 
 
 if __name__ == '__main__':
+    path='/resources/audio.raw'
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)

@@ -110,23 +110,14 @@ class MicrophoneStream(object):
 
 tempWord=['']
 def listen_print_loop(responses):
-    """Iterates through server responses and prints them.
-
-    The responses passed is a generator that will block until a response
-    is provided by the server.
-
-    Each response may contain multiple results, and each result may contain
-    multiple alternatives; for details, see https://goo.gl/tjCPAU.  Here we
-    print only the transcription for the top alternative of the top result.
-
-    In this case, responses are provided for interim results as well. If the
-    response is an interim one, print a line feed at the end of it, to allow
-    the next result to overwrite it, until the response is a final one. For the
-    final one, print a newline to preserve the finalized transcription.
-    """
     i=0
     start_time = time.time()
     for response in responses:
+
+        if (time.time() - start_time)>10:
+            print('hi')
+            return
+
         if not response.results:
             continue
 
@@ -137,8 +128,6 @@ def listen_print_loop(responses):
         if not result.alternatives:
             continue
 
-        if (time.time() - start_time)>60:
-            return
         # Display the transcription of the top alternative.
         transcript = result.alternatives[0].transcript
 

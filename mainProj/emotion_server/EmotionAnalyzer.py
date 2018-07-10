@@ -2,8 +2,25 @@ import socket
 import codecs
 from konlpy.tag import Kkma
 from konlpy.utils import pprint
+from gensim.models import word2vec
+from konlpy.tag import Twitter
 
 kkma=Kkma()#Kkma Morpheme Initializing
+twitter = Twitter()
+
+def sentiment():
+    filename ='./model/wiki.model'
+    model = word2vec.Word2Vec.load(filename)
+    standard = ['기쁨','슬픔','분노','놀람','혐오','두려움','반성']
+    emotion = '돈'
+    weight = []
+    for s in standard:
+        weight.append(model.wv.similarity(s, emotion))
+    print(weight)
+    print(model.wv.most_similar(emotion))
+
+
+'''
 def csvList():
     global dictList
     dictList=csvArranger()
@@ -23,12 +40,13 @@ def csvLoading():
     csv=codecs.open(filename, 'r', 'euc_kr').read()
     print('csvLoaded')
     return csv
-
-def morphemeParse(data):
-    naturalData=kkma.sentences(data)
+'''
+#def morphemeParse(data):
+def morphemeParse():
+    naturalData=['사랑해요','감사해요','미워요','고마워요','싫어요','불행하다']
     parsedData=[]
     for nd in naturalData:
-        parsedData.append(kkma.pos(nd))
+        parsedData.append(twitter.pos(nd))
     print(parsedData)
     return parsedData
             
@@ -58,10 +76,11 @@ def listen(host, port):
         print('Req has been dected')
         try:
             recevingData=dataReciver(connection)
-            parsedSentence=morphemeParse(recevingData)#First Receive Data, and then morpe the syntex.
+            #parsedSentence=morphemeParse(recevingData)
+            parsedSentence=morphemeParse()#First Receive Data, and then morpe the syntex.
             dataSender(connection, parsedSentence)#Data Sending
         except Exception as e:
-            print('Errer has been occurred at the responding section')
+            print('Error has been occurred at the responding section')
             print(str(e))
         finally:
             connection.close()
@@ -69,5 +88,6 @@ def listen(host, port):
 
 
 if __name__ == '__main__':
-    csvList()#Initializing the csv Dict to upload the csv to global var
+    #csvList()#Initializing the csv Dict to upload the csv to global var
     listen('localhost', 25443)
+    sentiment()

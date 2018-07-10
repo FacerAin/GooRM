@@ -14,6 +14,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+def explicit():
+    
+    from google.cloud import storage
+
+    # Explicitly use service account credentials by specifying the private key
+    # file.
+    storage_client = storage.Client.from_service_account_json('/home/pi/Desktop/GooRM-986a31f2c980.json')
+
+    # Make an authenticated API request
+    buckets = list(storage_client.list_buckets())
+    print(buckets)
 
 def run_quickstart():
     # [START speech_quickstart]
@@ -46,7 +57,7 @@ def run_quickstart():
     config = types.RecognitionConfig(
         encoding=enums.RecognitionConfig.AudioEncoding.LINEAR16,
         sample_rate_hertz=16000,
-        language_code='en-US')
+        language_code='ko-KR')
 
     # Detects speech in the audio file
     response = client.recognize(config, audio)
@@ -57,4 +68,5 @@ def run_quickstart():
 
 
 if __name__ == '__main__':
+    #explicit()
     run_quickstart()

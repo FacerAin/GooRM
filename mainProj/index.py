@@ -1,16 +1,21 @@
+#-*- coding: utf-8 -*-
+import socket
+import threading
 import time
 import wave
-import threading
 import pyaudio
+import enum
 from google.cloud import speech
-from google.cloud.speech import enums
-from google.cloud.speech import types
-
-
-
-
+from google.cloud.speech import enums, types
+color=[0,0,0]
 def threadFlow(lenth):
-    googleSpeechAPI(record(lenth))
+    #text=googleSpeechAPI(record(lenth))
+    text='나는 정말 행복합니다'
+    print(text)
+    emotion=tuple(socketConnect(text))#(max, index)
+    print(emotion)
+    print('finish')
+    #ledChanger=Changer(emotion)
 
 def record(lenth):
     CHUNK = 512
@@ -40,26 +45,32 @@ def record(lenth):
     return frames#audio sound return
 
 def googleSpeechAPI(content):
-    print('googleSpeech Entrting')
+    print('googleSpeech Enterting')
     client = speech.SpeechClient()
     audio = types.RecognitionAudio(content=b''.join(content))
-
     config = types.RecognitionConfig(
         encoding=enums.RecognitionConfig.AudioEncoding.LINEAR16,
         sample_rate_hertz=16000,
         language_code='ko-KR')
-
     response = client.recognize(config, audio)
     for result in response.results:
         print(result.alternatives[0].transcript)
         return result.alternatives[0].transcript
 
+def socketConnect(text):
+      with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.connect(('localhost', 25443))
+        s.sendall(text.encode())
+        resp = s.recv(10000)
+        print(resp)
+        return resp
+
 def main():
     lenth=10#recording lenth
     while True:
-        thf=threading.Thread(target=threadFlow, args=(lenth,))
-        print('#########################start')
-        thf.start()
+        thf=threading.Thread(target=threadFlow, args=(lenth,))#Thread set
+        print('start')
+        thf.start()#Thread Starting
         time.sleep(lenth+1)
         print('sleepOver')
 

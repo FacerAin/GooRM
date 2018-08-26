@@ -1,45 +1,72 @@
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*- 
 import socket
+import pickle
 from gensim.models import word2vec
 from konlpy.tag import Twitter
+import math
+
 twitter = Twitter()
 filename = './models/wiki.model'
 print('W2V model Loading')
 model = word2vec.Word2Vec.load(filename)
 print('model Loaded!!!')
-
+print('poserLoading')
+twitter.pos('poserLoaded')
+def sigmoid(x):
+    return 1 / (1 + math.exp(4-10*x))
+#데이터의 양극화를 위해서 SIGMOID함수를 이용.
 def sentiment(data):
-    print(data)    
+    print('sentiment analyze')   
     standard = ['분노','기대','기쁨','존경','두려움','놀람','슬픔','혐오']
     weight = []
+    
     for i in standard:
         sum = 0
-    
+        z = 0
         for s in data:
-        
-            sum += model.wv.similarity(s[0],i)
-        if not weight == 0:
-            weight.append(sum/len(data))
+            try:
+                if(sigmoid(model.wv.similarity(s[0],i))<0.4):
+                    sum += 0
+                    z += 1
+                else:
+                    sum += sigmoid(model.wv.similarity(s[0],i))
+            except:
+                pass
+        if not len(data) == z:
+            weight.append(sum/(len(data)-z))
+        else:
+            weight.append(0)
+    zeroSum=0
+    for i in weight:
+        zeroSum += i
     
+    #if zeroSum=0, weight is Null
+    if zeroSum == 0:
+        print('data is Null')
+        raise Exception
     maximumValue=max(weight)
-    index=maximumValue.index(maximumValue)
+    index=weight.index(maximumValue)
     print('Sentiment:{}\nweight:{}'.format(standard[index], maximumValue))
-    return (maximumValue, index)
+    return weight
 
 def morphemeParse(data):
     parsedData= twitter.pos(data,stem=True,norm=True)
-    print(parsedData)
-    return parsedData
+    extractedData =[]
+    for i in parsedData:
+        if i[1] in ['Noun','Adjective','Verb','Exclamation']:
+            extractedData.append(i)
+    print(extractedData)
+    return extractedData
             
 def dataReciver(conn):
     print('Entering Reciver')
     data=conn.recv(10000)
-    data=str(data.decode('utf-8'))
+    data=str(data.decode())
     print('received Data is┐\n>{}'.format(data))
     return data
 
 def dataSender(conn, data):
-    conn.sendall(data)
+    conn.sendall(pickle.dumps(data))
     return
 
 
@@ -53,13 +80,15 @@ def listen(host, port):
         print('server Error. Please retry')
         exit()
     while True:
-        print('ready to responde')
+        print('ready to response')
+        print('\n')
         sockt.listen(5)
         connection, addr=sockt.accept()
         print('Requested')
         try:
             receivedData=dataReciver(connection)
-            emotion=sentiment(receivedData)#sentiment analyzing
+            parsedData=morphemeParse(receivedData)
+            emotion=sentiment(parsedData)#sentiment analyzing
             dataSender(connection, emotion)#sending emotion
         except Exception as e:
             print('Error has been occurred at the responding section')
@@ -70,4 +99,4 @@ def listen(host, port):
 
 
 if __name__ == '__main__':
-    listen('localhost', 25443)
+    listen('localhost', 25438)

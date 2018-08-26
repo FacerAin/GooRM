@@ -7,18 +7,23 @@ import threading
 import time
 import wave
 import csv
+import control
+import pyaudio
+import RPi.GPIO as GPIO
 
 from google.cloud import speech
 from google.cloud.speech import enums, types
 
-import control
-import pyaudio
-import RPi.GPIO as GPIO
 GPIO.setmode(GPIO.BCM)
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"]="/home/pi/goorm/mainProj/GooRM-986a31f2c980.json"
 ledChanger = control.Changer()
 weight=[0, 0, 0, 0, 0, 0, 0, 0]
-callTime=0
+callTime = 0
+index = 0
+isFirst= 0 
+GPIO.setup(23, GPIO.IN, pull_up_down=GPIO.PUD_UP)#toggle
+GPIO.setup(24, GPIO.IN, pull_up_down=GPIO.PUD_UP)#button
+GPIO.setup(16, GPIO.IN, pull_up_down = GPIO.PUD_UP)#select
 GPIO.setup(12, GPIO.OUT)#LED
 def weightAdder(weightList):
     j=0
@@ -33,17 +38,32 @@ def weightAvg():
         weight[weight.index(i)] /= callTime
 
 def threadFlow(lenth, isFinal):
-    GPIO.output(12, True)
     text=googleSpeechAPI(record(lenth))
-    GPIO.output(12, False)
-    print('recognizedText:{}'.format(text))
-    emotionWeight=list(socketConnect(str(text)))#get Weights of emotion
-    maxValue = max(emotionWeight)
-    index = emotionWeight.index(maxValue)
-    weightAdder(emotionWeight)
+    global index
+    global isFirst
+    error = False
+    try:
+        print('recognizedText:' + text)
+        emotionWeight = list(socketConnect(str(text)))#get Weights of emotion
+        emotionWeight
+        maxValue = max(emotionWeight)
+        index = emotionWeight.index(maxValue)
+        weightAdder(emotionWeight)
+    except:
+        print('None of RecognizedText')
+        error = True
+
     if isFinal == 0:
-        ledChanger.setEmotion(index)
+        if not error:
+            ledChanger.setEmotion(index)
+        elif isFirst == 0:
+            ledChanger.setWhite()
+            isFirst += 1
+        else:
+            ledChanger.setEmotion(index)
     elif isFinal == 1:
+        print('Final Seq')
+        ledChanger.setEmotion(index)
         weightAvg()
         print(weight)
         maxValue = max(weight)
@@ -56,11 +76,11 @@ def finalQuiz(maxIndex):
     time.sleep(3)
     maxIndex += 1
     ledChanger.finalRainbow()
-    GPIO.setup(16, GPIO.IN, pull_up_down = GPIO.PUD_UP)
     ledChanger.changeMode(1)
     mode=1
     while True:
         if(GPIO.input(16) == False):
+            print('change mode')
             if(mode > 7):
                 mode = 1
             else:
@@ -68,15 +88,20 @@ def finalQuiz(maxIndex):
             ledChanger.changeMode(mode)
             time.sleep(0.05)
 
-        if(GPIO.input(23) == False):
-            #선택
+        if(GPIO.input(24) == False):
+            #choosing
+            print('selection')
             if(mode == maxIndex):
-                #합격!
+                print('---correct answer')
+                ledChanger.finalRainbow()
+                GPIO.output(12, False)
                 break
             else:
-                ledChanger.wrong()
+                print('---wrong answer')
+                ledChanger.wrong(mode)
                 time.sleep(0.05)
                 continue
+    
 
 def csvSaver(index):
     data = []
@@ -97,7 +122,7 @@ def retrospection():
     with open('./data.csv', 'r', encoding='utf-8') as f:
         rd = csv.reader(f)
         for line in rd:
-            dataset.append((rd.line_num, line))
+            dataset.append(line)
         lenth=len(dataset)
         f.close()
     sourceData=[]#데이터 10개로 간추리기
@@ -105,6 +130,7 @@ def retrospection():
     while j < lenth:
         sourceData.append(dataset[j])
         j += 1
+    print(sourceData)
     return sourceData
 
 
@@ -145,7 +171,7 @@ def googleSpeechAPI(content):
 
 def socketConnect(text):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.connect(('localhost', 25437))
+        s.connect(('localhost', 25438))
         s.sendall(text.encode())
         resp = s.recv(16000)
         receivedData=pickle.loads(resp)
@@ -153,37 +179,43 @@ def socketConnect(text):
         return receivedData
 
 def btnRecog():
-    GPIO.setup(23, GPIO.IN, pull_up_down=GPIO.PUD_UP)#button
-    GPIO.setup(24, GPIO.IN, pull_up_down=GPIO.PUD_UP)#toggle
+    print("Ready to Function")
     try:
         while True:
             if GPIO.input(23) == False and GPIO.input(24) == False:
+                GPIO.output(12, True)
+                print('Emotion Analyzing Start')
                 threadsStartup()
-                print('mic')
-                time.sleep(2400)#4' 0"
+                GPIO.output(12, False)
             elif GPIO.input(23) == True and GPIO.input(24) == False:
-                print('past')
+                print('Retrospection Start')
+                GPIO.output(12, True)
                 past = retrospection()
                 ledChanger.pastLed(past)
+                GPIO.output(12, False)
                 
     except:
+        GPIO.output(12, False)
         GPIO.cleanup()
 
 def threadsStartup():
-    lenth=15#recording lenth
-    iterate=int(180/lenth)
-    for i in range(1, iterate):
+    iterate = 12
+    thf = None
+    for i in range(1, iterate+1):
         if not i == iterate:
-            thf=threading.Thread(target=threadFlow, args=(lenth, 0))#Thread set
+            thf=threading.Thread(target=threadFlow, args=(15, 0))#Thread set
+            thf.start()#Thread Starting
+            time.sleep(16)
         else:
-            thf = threading.Thread(target=threadFlow, args=(lenth, 1))
-        print('start')
-        thf.start()#Thread Starting
-        time.sleep(lenth+1)
-        print('sleepOver')
-    print('ProgramFinished')
+            thf = threading.Thread(target=threadFlow, args=(15, 1))
+            thf.start()#Thread Starting
+            break
+    thf.join()
+    print('Emotion Analyzing Finished')
 
-def main():
+def main():    
+    GPIO.output(12, False)
+    print('Eunnarae Start')
     btnRecog()
 
 if __name__ == '__main__':

@@ -21,11 +21,12 @@ class Changer:
     #['Anger','Expectation','Pleasure','Respect','Fear','Surprised','Sadness','Aversion']
     def __init__(self):
         pass
+
     def setWhite(self):
         self.sigmoidChangerClean(255, 255, 255)
 
     def setEmotion(self, emotion):#emotion = (maximum, index)
-        emo=emotionEnum.emotionEnum
+        emo = emotionEnum.emotionEnum
         if emotion == 0:
             self.feeling = emo.Anger
         elif emotion == 1:
@@ -52,7 +53,7 @@ class Changer:
             self.setEmotion(int(i[0]))
             time.sleep(3)
         self.rainbow()
-
+        
     def sigmoidChanger(self):
         nowColor = self.strip.getPixelColor(1)
         binState=bin(nowColor)
@@ -168,11 +169,16 @@ class Changer:
     def clear(self):
         self.sigmoidChangerClean(0,0,0)
 
+    def glow(self, mode):
+        color = self.emotionToColorClean(mode + 1)
+        self.sigmoidChangerClean(0, 0, 0)
+        self.sigmoidChangerClean(color[0], color[1], color[2])
+
+
     def Color(self, red, green, blue, white = 0):
           return (white << 24) | (red << 16) | (green << 8) | blue
 
     def wheel(self, pos):
-        """Generate rainbow colors across 0-255 positions."""
         if pos < 85:
             return self.Color(pos * 3, 255 - pos * 3, 0)
         elif pos < 170:
@@ -183,7 +189,6 @@ class Changer:
             return self.Color(0, pos * 3, 255 - pos * 3)
 
     def rainbow(self, wait_ms=20, iterations=1):
-        """Draw rainbow that fades across all pixels at once."""
         bgr=0
         for j in range(256*iterations):
             for i in range(self.strip.numPixels()):

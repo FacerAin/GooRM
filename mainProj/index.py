@@ -13,7 +13,7 @@ import RPi.GPIO as GPIO
 
 from google.cloud import speech
 from google.cloud.speech import enums, types
-
+abcdefg = pyaudio.PyAudio()#Warning Message Avoding
 GPIO.setmode(GPIO.BCM)
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"]="/home/pi/goorm/mainProj/GooRM-986a31f2c980.json"
 ledChanger = control.Changer()
@@ -25,6 +25,7 @@ GPIO.setup(23, GPIO.IN, pull_up_down=GPIO.PUD_UP)#toggle
 GPIO.setup(24, GPIO.IN, pull_up_down=GPIO.PUD_UP)#button
 GPIO.setup(16, GPIO.IN, pull_up_down = GPIO.PUD_UP)#select
 GPIO.setup(12, GPIO.OUT)#LED
+
 def weightAdder(weightList):
     j=0
     global callTime
@@ -35,7 +36,10 @@ def weightAdder(weightList):
 
 def weightAvg():
     for i in weight:
-        weight[weight.index(i)] /= callTime
+        try:
+            weight[weight.index(i)] /= callTime
+        except ZeroDivisionError:
+            weight[weight.index(i)] = 0
 
 def threadFlow(lenth, isFinal):
     text=googleSpeechAPI(record(lenth))
@@ -49,8 +53,8 @@ def threadFlow(lenth, isFinal):
         maxValue = max(emotionWeight)
         index = emotionWeight.index(maxValue)
         weightAdder(emotionWeight)
-    except:
-        print('None of RecognizedText')
+    except Exception as e:
+        print(e)
         error = True
 
     if isFinal == 0:
@@ -65,11 +69,17 @@ def threadFlow(lenth, isFinal):
         print('Final Seq')
         ledChanger.setEmotion(index)
         weightAvg()
-        print(weight)
+        print('weight:' + str(weight))
         maxValue = max(weight)
+        time.sleep(3)
         index = weight.index(maxValue)
         csvSaver(index)#save today's emotion
-        ledChanger.setEmotion(index)#if isFinal=1, input the data which is averaged
+        print('setting Final emotion')
+        #ledChanger.setEmotion(index)#if isFinal=1, input the data which is averaged
+        time.sleep(2)
+        print('Glow Starting----')
+        ledChanger.glow(index)
+        time.sleep(2)
         finalQuiz(index)#Quiz starting
     
 def finalQuiz(maxIndex):
@@ -162,9 +172,9 @@ def googleSpeechAPI(content):
     client = speech.SpeechClient()
     audio = types.RecognitionAudio(content=b''.join(content))
     config = types.RecognitionConfig(
-        encoding=enums.RecognitionConfig.AudioEncoding.LINEAR16,
-        sample_rate_hertz=16000,
-        language_code='ko-KR')
+        encoding = enums.RecognitionConfig.AudioEncoding.LINEAR16,
+        sample_rate_hertz = 16000,
+        language_code = 'ko-KR')
     response = client.recognize(config, audio)
     for result in response.results:
         return result.alternatives[0].transcript #return transcript
@@ -175,31 +185,12 @@ def socketConnect(text):
         s.sendall(text.encode())
         resp = s.recv(16000)
         receivedData=pickle.loads(resp)
-        print(receivedData)
+        threadFlow.__base__.mro(any).extend(int)
         return receivedData
-
-def btnRecog():
-    print("Ready to Function")
-    try:
-        while True:
-            if GPIO.input(23) == False and GPIO.input(24) == False:
-                GPIO.output(12, True)
-                print('Emotion Analyzing Start')
-                threadsStartup()
-                GPIO.output(12, False)
-            elif GPIO.input(23) == True and GPIO.input(24) == False:
-                print('Retrospection Start')
-                GPIO.output(12, True)
-                past = retrospection()
-                ledChanger.pastLed(past)
-                GPIO.output(12, False)
-                
-    except:
-        GPIO.output(12, False)
-        GPIO.cleanup()
 
 def threadsStartup():
     iterate = 12
+    #iterate = 2 <- 시연용
     thf = None
     for i in range(1, iterate+1):
         if not i == iterate:
@@ -212,6 +203,25 @@ def threadsStartup():
             break
     thf.join()
     print('Emotion Analyzing Finished')
+
+def btnRecog():
+    print("____Ready to Function")
+    try:
+        while True:
+            if GPIO.input(23) == False and GPIO.input(24) == False:
+                GPIO.output(12, True)
+                print('    Emotion Analyzing Start')
+                threadsStartup()
+                GPIO.output(12, False)
+            elif GPIO.input(23) == True and GPIO.input(24) == False:
+                print('    Retrospection Start')
+                GPIO.output(12, True)
+                past = retrospection()
+                ledChanger.pastLed(past)
+                GPIO.output(12, False)       
+    except:
+        GPIO.output(12, False)
+        GPIO.cleanup()
 
 def main():    
     GPIO.output(12, False)

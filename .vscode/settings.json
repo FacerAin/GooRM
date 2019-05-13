@@ -1,4 +1,5 @@
 {
-    "python.pythonPath": "D:\\Users\\lani\\Anaconda3\\python.exe",
-    "remote.onstartup": true
+    "python.pythonPath": "C:\\ProgramData\\Anaconda3\\python.exe",
+    "remote.onstartup": true,
+    "python.linting.pylintEnabled": true
 }
